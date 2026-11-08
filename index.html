@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRIPLE IN - FORMULIR PEMESANAN KLIEN</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Vue 3 CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <!-- Google Fonts & Custom Glassmorphism Styles -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Great+Vibes&family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,400&family=Poppins:wght@300;400;500;600&display=swap');
+
+    .font-cinzel { font-family: 'Cinzel', serif; }
+    .font-vibes { font-family: 'Great Vibes', cursive; }
+    .font-playfair { font-family: 'Playfair Display', serif; }
+    .font-poppins { font-family: 'Poppins', sans-serif; }
+    .font-montserrat { font-family: 'Montserrat', sans-serif; }
+
+    /* Latar belakang diubah menjadi warna solid bersih tanpa link eksternal */
+    .bg-wedding-clean {
+      background-color: #0c0a09;
+      background-image: radial-gradient(circle at 50% 0%, #1c1917 0%, #0c0a09 100%);
+    }
+
+    .glass-box {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+
+    .glass-input {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+    .glass-input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+    .glass-input:focus {
+      outline: none;
+      border-color: #d4af37;
+      background: rgba(255, 255, 255, 0.12);
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      cursor: pointer;
+    }
+
+    .gold-btn {
+      background: linear-gradient(180deg, #dfc07d 0%, #c49a45 100%);
+      color: #1a160d;
+      font-weight: 700;
+      box-shadow: 0 4px 15px rgba(196, 154, 69, 0.3);
+      cursor: pointer;
+    }
+    .gold-btn:hover {
+      background: linear-gradient(180deg, #ebd090 0%, #d4a74e 100%);
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .anim-fade-down { animation: fadeInDown 0.8s ease-out forwards; }
+
+    body.modal-open {
+      overflow: hidden !important;
+      position: fixed !important;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    html, body {
+      overflow-y: auto;
+      height: auto;
+      min-height: 100vh;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0c0a09; }
+    ::-webkit-scrollbar-thumb { background: #292524; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #44403c; }
+  </style>
+</head>
+<body class="bg-wedding-clean text-slate-100 font-poppins min-h-screen antialiased selection:bg-amber-400 selection:text-slate-900 pb-24" :class="{'modal-open': statModalType || showAddOrderModal || reviewClientModal || templatePreviewModal || activeImagePopup || showAdminProfileModal || showResetConfirmModal}">
+  <div id="app" class="min-h-screen flex flex-col justify-between">
+
+    <!-- TOAST NOTIFICATION -->
+    <div v-if="toastMessage" class="fixed top-5 right-5 z-50 glass-box bg-slate-900/95 border border-amber-400/50 text-amber-200 px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-xs anim-fade-down">
+      <span class="font-bold text-amber-400">INFO:</span>
+      <span>{{ toastMessage }}</span>
+    </div>
+
+    <div class="flex-1">
+      <!-- ========================================================================= -->
+      <!-- KONDISI A: JIKA DIAKSES SEBAGAI HALAMAN FORMULIR PUBLIK KLIEN (?form=client) -->
+      <!-- ========================================================================= -->
+      <div v-if="isPublicClientForm" class="min-h-screen flex flex-col items-center justify-center p-3 sm:p-6">
+        <div class="w-full max-w-2xl glass-box rounded-3xl p-6 sm:p-8 space-y-6 border border-amber-400/40 anim-fade-down my-6">
+          
+          <div class="text-center space-y-2">
+            <h1 class="font-cinzel text-xl md:text-2xl font-bold tracking-widest text-white uppercase">TRIPLE IN</h1>
+            <h2 class="font-cinzel text-xs md:text-sm tracking-wider text-amber-200 uppercase">FORMULIR PEMESANAN & PEMILIHAN TEMA UNDANGAN</h2>
+            <p class="text-xs text-slate-300">Silakan pilih tema, lihat pratinjau, dan isi data pernikahan Anda di bawah ini.</p>
+          </div>
+
+          <div class="space-y-4 text-xs">
+            <!-- PILIHAN TEMA & TOMBOL REVIEW TEMA -->
+            <div class="space-y-2">
+              <label class="block text-amber-200 font-semibold">Pilih & Review Tema Undangan Digital *</label>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div v-for="t in templates" :key="t.id" class="glass-box p-3.5 rounded-xl border flex flex-col justify-between space-y-2" :class="publicForm.theme === t.name ? 'border-amber-400 bg-amber-500/10' : 'border-white/10'">
+                  <div>
+                    <div class="flex justify-between items-center">
+                      <span class="font-bold text-white text-xs font-cinzel">{{ t.name }}</span>
+                      <input type="radio" v-model="publicForm.theme" :value="t.name" class="cursor-pointer accent-amber-400">
+                    </div>
+                    <p class="text-[10px] text-slate-300 mt-1">{{ t.description }}</p>
+                  </div>
+                  <button @click="openTemplatePreview(t)" type="button" class="w-full glass-input py-1.5 rounded-lg text-[10px] text-amber-300 hover:bg-white/20 transition font-semibold flex items-center justify-center gap-1 cursor-pointer">
+                    Lihat Review Tema
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <div>
+                <label class="block text-slate-300 mb-1 font-medium">Nomor WhatsApp Anda (Klien) *</label>
+                <input v-model="publicForm.whatsapp" type="text" placeholder="Contoh: 081234567890" class="w-full glass-input rounded-xl p-2.5">
+              </div>
+              <div>
+                <label class="block text-slate-300 mb-1 font-medium">Tanggal Resepsi *</label>
+                <input v-model="publicForm.date" type="date" class="w-full glass-input rounded-xl p-2.5 bg-slate-900 text-xs">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-slate-300 mb-1 font-medium">Nama Mempelai Pria (Lengkap dengan Gelar) *</label>
+                <input v-model="publicForm.groom" type="text" placeholder="Contoh: Rizky Pratama, S.H." class="w-full glass-input rounded-xl p-2.5">
+              </div>
+              <div>
+                <label class="block text-slate-300 mb-1 font-medium">Nama Mempelai Wanita (Lengkap dengan Gelar) *</label>
+                <input v-model="publicForm.bride" type="text" placeholder="Contoh: Putri Amalia, S.Pd." class="w-full glass-input rounded-xl p-2.5">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-slate-300 mb-1 font-medium">Nama Tempat / Gedung Resepsi *</label>
+                <input v-model="publicForm.locationName" type="text" placeholder="Contoh: Hotel Claro Ballroom" class="w-full glass-input rounded-xl p-2.5">
+              </div>
+              <div>
+                <label class="block text-slate-300 mb-1 font-medium">Link Google Maps Lokasi</label>
+                <input v-model="publicForm.mapsUrl" type="text" placeholder="https://maps.app.goo.gl/..." class="w-full glass-input rounded-xl p-2.5">
+              </div>
+            </div>
+
+            <div class="p-3.5 rounded-2xl glass-box bg-white/5 space-y-3 border border-white/10">
+              <span class="text-amber-200 font-bold block">Data Ampau Digital (Rekening / E-Wallet Klien)</span>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-slate-300 mb-1">Bank / E-Wallet</label>
+                  <select v-model="publicForm.bankName" class="w-full glass-input rounded-xl p-2 bg-slate-900 text-xs cursor-pointer">
+                    <option v-for="b in indonesiaBanks" :key="b" :value="b">{{ b }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-slate-300 mb-1">Nomor Rekening / HP</label>
+                  <input v-model="publicForm.bankAccount" type="text" placeholder="1234567890" class="w-full glass-input rounded-xl p-2">
+                </div>
+                <div>
+                  <label class="block text-slate-300 mb-1">Atas Nama (a/n)</label>
+                  <input v-model="publicForm.bankHolder" type="text" placeholder="Nama Pemilik Rekening" class="w-full glass-input rounded-xl p-2">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TOMBOL PENGIRIMAN UTAMA DI BAWAH FORM -->
+          <div class="pt-4">
+            <button @click="submitPublicFormToAdminWA" type="button" class="w-full py-4 gold-btn rounded-xl text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-xl cursor-pointer">
+              Kirim Formulir ke WhatsApp Admin
+            </button>
+          </div>
+
+        </div>
+
+        <!-- FLOATING / STICKY BOTTOM BUTTON KHUSUS KLIEN -->
+        <div class="fixed bottom-0 left-0 right-0 p-3 bg-stone-950/95 backdrop-blur-md border-t border-white/10 flex justify-center z-50">
+          <div class="w-full max-w-2xl">
+            <button @click="submitPublicFormToAdminWA" type="button" class="w-full py-3 gold-btn rounded-xl text-xs font-bold uppercase flex items-center justify-center gap-2 shadow-2xl cursor-pointer">
+              Kirim Pemesanan Sekarang ke WhatsApp Admin
+            </button>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ========================================================================= -->
+      <!-- KONDISI B: HALAMAN UTAMA ADMIN & WORKSPACE KLIEN                          -->
+      <!-- ========================================================================= -->
+      <template v-else>
+
+        <!-- 1. HALAMAN LOGIN ADMIN (Kredensial: ikran / 12345) -->
+        <div v-if="!isLoggedIn" class="min-h-screen flex flex-col items-center justify-center p-4 relative">
+          <div class="w-full max-w-sm text-center anim-fade-down">
+            
+            <h1 class="font-cinzel text-xl md:text-2xl font-bold tracking-widest text-slate-100 uppercase mb-1">
+              TRIPLE IN
+            </h1>
+            <h2 class="font-cinzel text-sm md:text-base tracking-wider text-slate-200 uppercase mb-2">
+              UNDANGAN DIGITAL
+            </h2>
+            <p class="text-[11px] text-amber-200/80 tracking-widest uppercase mb-8">DEVELOPER WORKSPACE - LOGIN</p>
+
+            <div v-if="loginError" class="mb-4 p-3 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs text-center">
+              {{ loginError }}
+            </div>
+
+            <form @submit.prevent="handleLogin" class="space-y-4">
+              <div>
+                <input v-model="loginForm.username" type="text" required placeholder="Username / E-mail" class="w-full glass-input rounded-2xl px-5 py-3.5 text-center text-sm transition">
+              </div>
+              <div>
+                <input v-model="loginForm.password" type="password" required placeholder="Password" class="w-full glass-input rounded-2xl px-5 py-3.5 text-center text-sm transition">
+              </div>
+              <button type="submit" class="w-full gold-btn py-3.5 rounded-2xl tracking-wider text-sm transition mt-2 uppercase">
+                LOG IN
+              </button>
+            </form>
+
+            <div class="mt-8 flex flex-col gap-2">
+              <button @click="autoFillAdmin" type="button" class="text-[11px] bg-white/10 hover:bg-white/20 text-amber-200 border border-white/20 px-4 py-2 rounded-xl transition cursor-pointer">
+                Quick Auto-Fill Login (ikran / 12345)
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+
+        <!-- 2. DASHBOARD MAIN VIEW -->
+        <div v-else class="min-h-screen flex flex-col">
+          
+          <nav class="glass-box sticky top-0 z-40 px-4 md:px-8 py-3 flex justify-between items-center border-b border-white/10">
+            <div class="flex items-center space-x-2">
+              <span class="font-cinzel font-bold text-base text-amber-200 tracking-wider">TRIPLE IN</span>
+              <span class="text-xs text-slate-300 hidden sm:inline">&middot; Undangan Digital</span>
+            </div>
+
+            <div class="flex items-center space-x-3">
+              <!-- TOMBOL SWITCH VIEW -->
+              <button v-if="activeView === 'admin'" @click="activeView = 'client'" type="button" class="text-xs glass-input px-3.5 py-2 rounded-xl border border-white/20 text-amber-200 hover:bg-white/20 transition flex items-center gap-1.5 cursor-pointer font-semibold">
+                Dashboard Klien
+              </button>
+              <button v-else @click="activeView = 'admin'" type="button" class="text-xs glass-input px-3.5 py-2 rounded-xl border border-white/20 text-amber-200 hover:bg-white/20 transition flex items-center gap-1.5 cursor-pointer font-semibold">
+                Dashboard Admin
+              </button>
+
+              <!-- PROFIL & TOMBOL LOGOUT -->
+              <div v-if="activeView === 'admin'" class="flex items-center space-x-3">
+                <span @click="showAdminProfileModal = true" class="text-xs font-semibold text-amber-300 cursor-pointer hover:underline">Profil Admin</span>
+                <button @click="handleLogout" type="button" class="text-slate-300 hover:text-rose-400 text-xs transition cursor-pointer ml-1 font-semibold" title="Logout">
+                  Keluar
+                </button>
+              </div>
+            </div>
+          </nav>
+
+          <main class="flex-1 max-w-7xl w-full mx-auto px-2 sm:px-4 py-6 space-y-6 overflow-y-auto">
+            
+            <div class="text-center md:text-left flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+              <div>
+                <h2 class="font-cinzel text-xl md:text-2xl font-bold tracking-wider text-slate-100 uppercase">
+                  {{ activeView === 'admin' ? 'ADMIN WORKSPACE - KELOLA PESANAN & TAMU' : 'DASHBOARD KLIEN TERISOLASI - ' + (currentClient ? currentClient.groom + ' & ' + currentClient.bride : 'KLIEN') }}
+                </h2>
+              </div>
+              <div class="flex flex-wrap gap-2 justify-center">
+                <button v-if="activeView === 'admin'" @click="resetToDefaultData" type="button" class="text-[11px] glass-input px-3.5 py-2 rounded-xl text-rose-300 hover:bg-rose-500/20 transition flex items-center gap-1 cursor-pointer font-semibold" title="Reset Data Awal">
+                  Reset Data (4 Klien)
+                </button>
+              </div>
+            </div>
+
+
+            <!-- ================= A. DASHBOARD ADMIN VIEW ================= -->
+            <template v-if="activeView === 'admin'">
+              <!-- Top Stat Horizontal Bulat -->
+              <div class="grid grid-cols-3 gap-2 sm:gap-6 py-2">
+                <div @click="openStatModal('tamu')" class="glass-box aspect-square rounded-full p-2 sm:p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-white/10 transition border border-white/20 shadow-xl group">
+                  <span class="text-[10px] sm:text-xs text-amber-200 font-semibold uppercase tracking-tighter sm:tracking-normal line-clamp-1">Tamu</span>
+                  <span class="text-lg sm:text-3xl font-extrabold text-white my-0.5 sm:my-1">{{ totalGuestsCount }}</span>
+                  <span class="text-[8px] sm:text-[10px] text-slate-300 hidden sm:block">Total Tamu Klien</span>
+                </div>
+
+                <div @click="openStatModal('sent')" class="glass-box aspect-square rounded-full p-2 sm:p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-white/10 transition border border-white/20 shadow-xl group">
+                  <span class="text-[10px] sm:text-xs text-emerald-300 font-semibold uppercase tracking-tighter sm:tracking-normal line-clamp-1">Telah Dikirim</span>
+                  <span class="text-lg sm:text-3xl font-extrabold text-white my-0.5 sm:my-1">{{ sentCouples.length }}</span>
+                  <span class="text-[8px] sm:text-[10px] text-emerald-400 hidden sm:block">Undangan Aktif</span>
+                </div>
+
+                <div @click="openStatModal('unsent')" class="glass-box aspect-square rounded-full p-2 sm:p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-white/10 transition border border-white/20 shadow-xl group">
+                  <span class="text-[10px] sm:text-xs text-amber-300 font-semibold uppercase tracking-tighter sm:tracking-normal line-clamp-1">Belum Dikirim</span>
+                  <span class="text-lg sm:text-3xl font-extrabold text-amber-400 my-0.5 sm:my-1">{{ unsentCouples.length }}</span>
+                  <span class="text-[8px] sm:text-[10px] text-amber-200 hidden sm:block">Draft / Menunggu</span>
+                </div>
+              </div>
+
+              <!-- TOMBOL AKSI ADMIN -->
+              <div class="flex flex-wrap justify-center sm:justify-start pt-2 gap-3">
+                <button @click="showAddOrderModal = true" type="button" class="gold-btn px-5 py-3 rounded-xl text-xs flex items-center justify-center gap-2 uppercase font-bold tracking-wider shadow-lg cursor-pointer">
+                  Buat Pesanan Baru
+                </button>
+                <button @click="copyClientFormLink" type="button" class="glass-input px-5 py-3 rounded-xl text-xs text-amber-300 hover:bg-white/20 flex items-center justify-center gap-2 uppercase font-bold tracking-wider shadow-lg cursor-pointer border border-amber-400/50">
+                  Salin Link Form Klien
+                </button>
+              </div>
+
+              <!-- SECTION 1: KLIEN YANG TELAH DIKIRIM -->
+              <div class="glass-box p-5 rounded-2xl space-y-4 border border-emerald-500/40 bg-emerald-500/5">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-white/10 pb-3">
+                  <div>
+                    <span class="text-[10px] text-emerald-300 font-bold uppercase tracking-widest block">Status: Telah Dikirim ke Pelanggan</span>
+                    <h3 class="font-cinzel text-sm sm:text-base font-bold text-white uppercase tracking-wider">
+                      Klien yang Telah Dibuat & Dikirim ({{ sentCouples.length }} Data)
+                    </h3>
+                  </div>
+                  <span class="text-[10px] px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 font-bold">
+                    Live & Aktif
+                  </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div v-for="(client, cIndex) in sentCouples" :key="cIndex" class="glass-box p-4 rounded-xl border border-white/15 flex flex-col justify-between space-y-3 bg-slate-900/40">
+                    <div class="space-y-2">
+                      <div class="flex justify-between items-start">
+                        <span class="text-xs font-bold text-white">{{ client.groom }} & {{ client.bride }}</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/40 text-emerald-200 bg-emerald-500/10 font-semibold">Telah Dikirim</span>
+                      </div>
+
+                      <div class="flex items-center gap-2">
+                        <span class="text-[10px] px-2 py-0.5 rounded-full border border-amber-500/40 text-amber-200 bg-amber-500/10">Tema: {{ client.theme }}</span>
+                        <span class="text-[10px] text-slate-300">WA: {{ client.whatsapp }}</span>
+                      </div>
+
+                      <div class="flex gap-2 py-1 overflow-x-auto">
+                        <img :src="client.coverPhoto || defaultCover" @click="openImagePopup(client.coverPhoto || defaultCover)" class="w-12 h-12 object-cover rounded-lg border border-amber-300/40 cursor-pointer hover:scale-105 transition" title="Klik untuk memperbesar">
+                        <img :src="client.groomPhoto || defaultGroom" @click="openImagePopup(client.groomPhoto || defaultGroom)" class="w-12 h-12 object-cover rounded-lg border border-white/20 cursor-pointer hover:scale-105 transition" title="Klik untuk memperbesar">
+                        <img :src="client.bridePhoto || defaultBride" @click="openImagePopup(client.bridePhoto || defaultBride)" class="w-12 h-12 object-cover rounded-lg border border-white/20 cursor-pointer hover:scale-105 transition" title="Klik untuk memperbesar">
+                      </div>
+
+                      <p class="text-[10px] text-slate-300">
+                        Resepsi: {{ client.date }} | <span class="text-amber-300">{{ getCountdownLabel(client.date) }}</span>
+                      </p>
+                      <p class="text-[10px] text-slate-300">
+                        {{ client.bankName || 'BCA' }}: <strong>{{ client.bankAccount || '-' }}</strong>
+                      </p>
+                      <p class="text-[10px] text-slate-400">
+                        {{ client.guests.length }} Tamu Terdaftar
+                      </p>
+                    </div>
+
+                    <div class="flex items-center gap-2 pt-2 border-t border-white/10">
+                      <button @click="openClientReview(client)" type="button" class="flex-1 glass-input py-1.5 rounded-xl text-xs text-amber-300 hover:bg-white/20 transition flex items-center justify-center gap-1.5 font-semibold cursor-pointer">
+                        Review Undangan
+                      </button>
+                      <button @click="openWADialogForClient(client)" type="button" class="flex-1 gold-btn py-1.5 rounded-xl text-xs flex items-center justify-center gap-1 font-bold cursor-pointer">
+                        Kirim Ulang WA
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECTION 2: KLIEN YANG BELUM DIKIRIM -->
+              <div class="glass-box p-5 rounded-2xl space-y-4 border border-amber-500/40 bg-amber-500/5">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-white/10 pb-3">
+                  <div>
+                    <span class="text-[10px] text-amber-300 font-bold uppercase tracking-widest block">Status: Belum Dikirim ke Pelanggan</span>
+                    <h3 class="font-cinzel text-sm sm:text-base font-bold text-white uppercase tracking-wider">
+                      Klien yang Belum Dikirim ({{ unsentCouples.length }} Data)
+                    </h3>
+                  </div>
+                  <span class="text-[10px] px-3 py-1 rounded-full bg-amber-500/20 text-amber-200 border border-amber-500/30 font-bold">
+                    Draft / Menunggu Kirim
+                  </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div v-for="(client, cIndex) in unsentCouples" :key="cIndex" class="glass-box p-4 rounded-xl border border-white/15 flex flex-col justify-between space-y-3 bg-slate-900/40">
+                    <div class="space-y-2">
+                      <div class="flex justify-between items-start">
+                        <span class="text-xs font-bold text-white">{{ client.groom }} & {{ client.bride }}</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full border border-amber-500/40 text-amber-300 bg-amber-500/10 font-semibold">Belum Dikirim</span>
+                      </div>
+
+                      <div class="flex items-center gap-2">
+                        <span class="text-[10px] px-2 py-0.5 rounded-full border border-amber-500/40 text-amber-200 bg-amber-500/10">Tema: {{ client.theme }}</span>
+                        <span class="text-[10px] text-slate-300">WA: {{ client.whatsapp }}</span>
+                      </div>
+
+                      <p class="text-[10px] text-slate-300">
+                        Resepsi: {{ client.date }}
+                      </p>
+                      <p class="text-[10px] text-slate-300">
+                        {{ client.bankName || 'BCA' }}: <strong>{{ client.bankAccount || '-' }}</strong>
+                      </p>
+                    </div>
+
+                    <div class="flex items-center gap-2 pt-2 border-t border-white/10">
+                      <button @click="markAsSent(client)" type="button" class="flex-1 gold-btn py-1.5 rounded-xl text-xs flex items-center justify-center gap-1.5 font-bold cursor-pointer">
+                        Kirim Sekarang ke WA
+                      </button>
+                      <button @click="openClientReview(client)" type="button" class="glass-input px-3 py-1.5 rounded-xl text-xs text-amber-300 hover:bg-white/20 transition font-semibold cursor-pointer">
+                        Detail
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+
+            <!-- ================= B. DASHBOARD CLIENT VIEW ================= -->
+            <template v-else>
+              <div class="glass-box p-4 rounded-2xl bg-amber-500/10 border-amber-500/40 space-y-2">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div class="flex items-center gap-2 text-amber-200 text-xs font-bold">
+                    <span>PILIH AKUN KLIEN AKTIF:</span>
+                  </div>
+                  <div class="w-full sm:w-auto flex-1 max-w-xs">
+                    <select v-model="selectedClientIndex" class="w-full glass-input rounded-xl p-2.5 text-xs bg-slate-900 text-amber-300 font-bold border-amber-400/50 cursor-pointer">
+                      <option v-for="(client, cIdx) in sentCouples" :value="cIdx" :key="cIdx">
+                        Aktif: {{ client.groom }} & {{ client.bride }} ({{ client.theme }})
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- LIVE PRATINJAU UNDANGAN MILIK KLIEN -->
+              <div v-if="currentClient" class="space-y-6 pt-2">
+                <div class="glass-box p-6 rounded-3xl text-center space-y-5 shadow-2xl border border-amber-400/40 bg-gradient-to-b from-stone-900 via-amber-950 to-stone-900 text-amber-200 relative overflow-hidden">
+                  
+                  <div class="absolute top-4 right-4 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1 rounded-full text-[10px] font-bold">
+                    Live Preview Undangan Anda
+                  </div>
+
+                  <div class="relative h-56 rounded-2xl overflow-hidden border border-white/20 shadow-xl mt-4">
+                    <img :src="currentClient.coverPhoto || defaultCover" @click="openImagePopup(currentClient.coverPhoto || defaultCover)" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition" title="Klik untuk memperbesar foto">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex items-end justify-center p-4 pointer-events-none">
+                      <span class="text-xs md:text-sm text-amber-200 font-cinzel font-bold tracking-widest uppercase">WALIMATUL 'URSY &middot; {{ currentClient.theme }}</span>
+                    </div>
+                  </div>
+
+                  <div class="flex justify-center items-center gap-6 py-2">
+                    <div class="text-center">
+                      <img :src="currentClient.groomPhoto || defaultGroom" @click="openImagePopup(currentClient.groomPhoto || defaultGroom)" class="w-24 h-24 rounded-full border-2 border-amber-400 object-cover mx-auto shadow-lg cursor-pointer hover:scale-105 transition" title="Klik untuk memperbesar foto">
+                      <h3 class="text-sm md:text-base font-bold text-white mt-2 font-cinzel">{{ currentClient.groom }}</h3>
+                      <span class="text-[11px] text-slate-300">Mempelai Pria</span>
+                    </div>
+                    <span class="text-3xl font-vibes text-amber-400">&</span>
+                    <div class="text-center">
+                      <img :src="currentClient.bridePhoto || defaultBride" @click="openImagePopup(currentClient.bridePhoto || defaultBride)" class="w-24 h-24 rounded-full border-2 border-amber-400 object-cover mx-auto shadow-lg cursor-pointer hover:scale-105 transition" title="Klik untuk memperbesar foto">
+                      <h3 class="text-sm md:text-base font-bold text-white mt-2 font-cinzel">{{ currentClient.bride }}</h3>
+                      <span class="text-[11px] text-slate-300">Mempelai Wanita</span>
+                    </div>
+                  </div>
+
+                  <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 font-semibold max-w-md mx-auto">
+                    {{ getCountdownLabel(currentClient.date) }}
+                  </div>
+
+                  <div class="glass-box p-4 rounded-xl text-left text-xs space-y-2 bg-white/5 border border-white/10 max-w-xl mx-auto">
+                    <div class="flex justify-between items-center border-b border-white/10 pb-2">
+                      <span class="text-slate-300">Tanggal Resepsi:</span>
+                      <span class="font-bold text-white">{{ currentClient.date }}</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-1">
+                      <span class="text-slate-300">Tempat Acara:</span>
+                      <span class="font-bold text-white">{{ currentClient.locationName || 'Gedung Utama' }}</span>
+                    </div>
+                  </div>
+
+                  <div v-if="currentClient.mapsUrl">
+                    <a :href="currentClient.mapsUrl" target="_blank" class="text-xs text-amber-300 underline hover:text-white flex items-center justify-center gap-1 font-medium">
+                      Buka Petunjuk Lokasi di Google Maps
+                    </a>
+                  </div>
+
+                  <div class="glass-box p-4 rounded-xl text-left text-xs space-y-2 bg-amber-500/10 border border-amber-500/30 max-w-xl mx-auto">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-amber-300 block">Amplop Digital / Rekening Klien</span>
+                    <div class="flex justify-between items-center text-white font-bold">
+                      <span>{{ currentClient.bankName || 'BCA' }}</span>
+                      <span class="font-mono text-amber-200 text-sm">{{ currentClient.bankAccount || '-' }}</span>
+                    </div>
+                    <span class="text-[10px] text-slate-300 block">Atas Nama: {{ currentClient.bankHolder || '-' }}</span>
+                  </div>
+
+                  <div class="space-y-2 text-left max-w-xl mx-auto pt-2">
+                    <span class="text-xs font-bold text-slate-200 block uppercase">Galeri Foto Mempelai</span>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <template v-if="currentClient.gallery && currentClient.gallery.length">
+                        <img v-for="(img, idx) in currentClient.gallery" :key="idx" :src="img" @click="openImagePopup(img)" class="w-full h-24 object-cover rounded-xl border border-white/20 shadow-md cursor-pointer hover:scale-105 transition" title="Klik untuk memperbesar">
+                      </template>
+                      <template v-else>
+                        <div v-for="i in 4" :key="i" class="h-24 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center text-[10px] text-slate-500">Foto {{ i }}</div>
+                      </template>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- GENERATOR LINK TAMU & FORMAT PESAN WHATSAPP -->
+              <div v-if="currentClient" class="glass-box p-5 rounded-2xl space-y-4">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">GENERATOR LINK TAMU MANDIRI & FORMAT PESAN WHATSAPP</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div class="md:col-span-2">
+                    <input v-model="newGuestName" type="text" placeholder="Masukkan Nama Tamu Anda (Contoh: Bapak Andi & Keluarga)" class="w-full glass-input rounded-xl p-3 text-xs">
+                  </div>
+                  <div>
+                    <button @click="addNewGuest" type="button" class="w-full gold-btn py-3 rounded-xl text-xs uppercase font-bold flex items-center justify-center gap-1.5 cursor-pointer">
+                      Tambah Tamu
+                    </button>
+                  </div>
+                </div>
+
+                <div class="space-y-2.5 pt-2">
+                  <span class="text-xs font-semibold text-slate-300 block">Daftar Tamu Saya (Total: {{ currentClient.guests.length }}):</span>
+                  <div v-if="currentClient.guests.length === 0" class="text-xs text-slate-400 italic p-4 text-center glass-box rounded-xl">
+                    Belum ada tamu. Masukkan nama tamu Anda di atas lalu klik Tambah Tamu!
+                  </div>
+                  <div v-for="(g, gIdx) in currentClient.guests" :key="gIdx" class="glass-box p-3.5 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-white/15">
+                    <div class="truncate w-full sm:w-auto">
+                      <span class="text-white font-bold text-sm block truncate">{{ g.name }}</span>
+                      <span class="text-[10px] text-amber-200/80 font-mono block truncate">{{ getAbsoluteGuestLink(g.name, currentClient) }}</span>
+                    </div>
+
+                    <div class="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+                      <button @click="copySpecificLink(g.name, currentClient)" type="button" class="glass-input px-3 py-1.5 rounded-lg text-xs hover:bg-white/20 transition text-amber-300 font-medium cursor-pointer">
+                        Salin Link
+                      </button>
+                      <button @click="sendWAGuestSimple(currentClient, g.name)" type="button" class="gold-btn px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 font-bold cursor-pointer">
+                        Kirim WA
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+          </main>
+        </div>
+      </template>
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- FOOTER COPYRIGHT & VERSION                                                -->
+    <!-- ========================================================================= -->
+    <footer class="w-full px-4 sm:px-8 py-4 border-t border-white/10 bg-stone-950/80 backdrop-blur-md flex flex-col sm:flex-row justify-between items-center text-xs text-slate-400 gap-2 shrink-0 mt-8">
+      <div class="hidden sm:block w-24"></div>
+      <div class="text-center font-medium text-amber-200/90 tracking-wider">
+        &copy; 2026 TRIPLE IN
+      </div>
+      <div class="text-right font-mono text-slate-400 tracking-wider text-[11px]">
+        v1.31.26
+      </div>
+    </footer>
+
+
+    <!-- ================= MODAL-MODAL PENDUKUNG ================= -->
+
+    <!-- 1. MODAL POP-UP / LIGHTBOX FOTO -->
+    <div v-if="activeImagePopup" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4" @click="activeImagePopup = null">
+      <div class="relative max-w-4xl max-h-[90vh] flex flex-col items-center" @click.stop>
+        <button @click="activeImagePopup = null" class="absolute -top-10 right-0 text-white hover:text-amber-300 text-xs font-bold cursor-pointer px-3 py-1 bg-white/10 rounded-lg" title="Tutup">
+          Tutup
+        </button>
+        <img :src="activeImagePopup" class="max-w-full max-h-[80vh] rounded-2xl shadow-2xl border-2 border-amber-400/50 object-contain">
+      </div>
+    </div>
+
+
+    <!-- 2. MODAL POP-UP FOTO PROFIL & VISI ADMIN -->
+    <div v-if="showAdminProfileModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="glass-box rounded-3xl w-full max-w-md overflow-hidden flex flex-col p-6 text-center space-y-4 border border-amber-400/40 relative anim-fade-down">
+        
+        <button @click="showAdminProfileModal = false" class="absolute top-4 right-4 text-slate-300 hover:text-white text-xs font-semibold cursor-pointer">
+          Tutup
+        </button>
+
+        <div class="pt-2">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop" class="w-24 h-24 rounded-full border-2 border-amber-400 object-cover mx-auto shadow-xl">
+          <h3 class="font-cinzel text-lg font-bold text-white mt-3 uppercase tracking-wider">TRIPLE IN ADMIN</h3>
+          <p class="text-[11px] text-amber-300 font-semibold">Official Developer & Management Workspace</p>
+        </div>
+
+        <div class="glass-box p-4 rounded-2xl text-left space-y-2 bg-amber-500/10 border border-amber-500/30">
+          <div class="flex items-center gap-1.5 text-amber-200 text-xs font-bold uppercase tracking-wider font-cinzel">
+            Visi TRIPLE IN
+          </div>
+          <p class="text-xs text-slate-200 leading-relaxed italic">
+            "Menjadi platform penyedia undangan digital terdepan yang menghadirkan perpaduan sempurna antara kemewahan visual, kemudahan teknologi, dan efisiensi pengelolaan acara untuk mengabadikan setiap momen istimewa klien dengan penuh kehangatan."
+          </p>
+        </div>
+
+        <div class="pt-2">
+          <button @click="showAdminProfileModal = false" type="button" class="w-full py-2.5 gold-btn rounded-xl text-xs uppercase font-bold cursor-pointer shadow-lg">
+            Tutup
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- 3. MODAL REVIEW KLIEN LENGKAP -->
+    <div v-if="reviewClientModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-hidden">
+      <div class="glass-box rounded-3xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh] border border-amber-400/30">
+        <div class="p-3.5 border-b border-white/10 flex justify-between items-center bg-white/10 shrink-0">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-xs font-bold text-amber-200 uppercase tracking-wider">REVIEW UNDANGAN & DETAIL MULTIMEDIA</span>
+          </div>
+          <button @click="reviewClientModal = null" type="button" class="text-slate-300 hover:text-white cursor-pointer text-xs font-bold">Tutup</button>
+        </div>
+        
+        <div class="p-4 overflow-y-auto flex-1 space-y-4">
+          <div class="rounded-2xl p-6 text-center space-y-5 shadow-2xl border border-white/20 bg-gradient-to-b from-stone-900 via-amber-950 to-stone-900 text-amber-200 relative overflow-hidden">
+            
+            <div class="relative h-44 rounded-xl overflow-hidden border border-white/20 mb-3">
+              <img :src="reviewClientModal.coverPhoto || defaultCover" @click="openImagePopup(reviewClientModal.coverPhoto || defaultCover)" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition" title="Klik untuk memperbesar">
+              <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex items-end justify-center p-3 pointer-events-none">
+                <span class="text-xs text-amber-200 font-cinzel font-bold tracking-widest uppercase">WALIMATUL 'URSY</span>
+              </div>
+            </div>
+
+            <div class="flex justify-center items-center gap-4">
+              <div class="text-center">
+                <img :src="reviewClientModal.groomPhoto || defaultGroom" @click="openImagePopup(reviewClientModal.groomPhoto || defaultGroom)" class="w-20 h-20 rounded-full border-2 border-amber-400 object-cover mx-auto shadow-lg cursor-pointer hover:scale-105 transition" title="Klik untuk memperbesar">
+                <h3 class="text-sm font-bold text-white mt-1 font-cinzel">{{ reviewClientModal.groom }}</h3>
+                <span class="text-[10px] text-slate-300">Mempelai Pria</span>
+              </div>
+              <span class="text-2xl font-vibes text-amber-400">&</span>
+              <div class="text-center">
+                <img :src="reviewClientModal.bridePhoto || defaultBride" @click="openImagePopup(reviewClientModal.bridePhoto || defaultBride)" class="w-20 h-20 rounded-full border-2 border-amber-400 object-cover mx-auto shadow-lg cursor-pointer hover:scale-105 transition" title="Klik untuk memperbesar">
+                <h3 class="text-sm font-bold text-white mt-1 font-cinzel">{{ reviewClientModal.bride }}</h3>
+                <span class="text-[10px] text-slate-300">Mempelai Wanita</span>
+              </div>
+            </div>
+
+            <div class="p-3 rounded-xl text-xs font-semibold" :class="reviewClientModal.isSent ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-200' : 'bg-amber-500/10 border border-amber-500/30 text-amber-200'">
+              Status: {{ reviewClientModal.isSent ? 'Telah Dikirim ke Pelanggan' : 'Belum Dikirim (Draft)' }}
+            </div>
+
+            <div class="glass-box p-3.5 rounded-xl text-left text-xs space-y-2 bg-white/5 border border-white/10">
+              <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
+                <span class="text-[11px] text-slate-300">Resepsi:</span>
+                <span class="font-bold text-white">{{ reviewClientModal.date }} ({{ getCountdownLabel(reviewClientModal.date) }})</span>
+              </div>
+              <div class="flex justify-between items-center pt-1">
+                <span class="text-[11px] text-slate-300">Tempat:</span>
+                <span class="font-bold text-white">{{ reviewClientModal.locationName || 'Gedung Utama' }}</span>
+              </div>
+            </div>
+
+            <div v-if="reviewClientModal.mapsUrl">
+              <a :href="reviewClientModal.mapsUrl" target="_blank" class="text-[11px] text-amber-300 underline hover:text-white flex items-center justify-center gap-1">
+                Buka Lokasi di Google Maps
+              </a>
+            </div>
+
+            <div class="glass-box p-3.5 rounded-xl text-left text-xs space-y-1.5 bg-amber-500/10 border border-amber-500/30">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-amber-300 block">Rekening Ampau Digital</span>
+              <div class="flex justify-between items-center text-white font-bold">
+                <span>{{ reviewClientModal.bankName || 'BCA' }}</span>
+                <span class="font-mono text-amber-200">{{ reviewClientModal.bankAccount || '-' }}</span>
+              </div>
+              <span class="text-[10px] text-slate-300 block">a/n {{ reviewClientModal.bankHolder || '-' }}</span>
+            </div>
+
+            <div class="space-y-2 text-left">
+              <span class="text-[11px] font-bold text-slate-200 block uppercase">Galeri Foto ({{ (reviewClientModal.gallery && reviewClientModal.gallery.length) || 0 }})</span>
+              <div class="grid grid-cols-4 gap-2">
+                <template v-if="reviewClientModal.gallery && reviewClientModal.gallery.length">
+                  <img v-for="(img, idx) in reviewClientModal.gallery" :key="idx" :src="img" @click="openImagePopup(img)" class="w-full h-16 object-cover rounded-lg border border-white/20 cursor-pointer hover:scale-105 transition">
+                </template>
+                <template v-else>
+                  <div v-for="i in 4" :key="i" class="h-16 bg-white/5 rounded-lg border border-white/10 flex items-center justify-center text-[10px] text-slate-500">Foto {{ i }}</div>
+                </template>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="p-3.5 border-t border-white/10 bg-white/5 flex justify-between items-center gap-2 shrink-0">
+          <button @click="reviewClientModal = null" type="button" class="px-4 py-2 glass-input rounded-xl text-xs font-semibold cursor-pointer">
+            Tutup
+          </button>
+          <button @click="openWADialogForClient(reviewClientModal)" type="button" class="px-4 py-2 gold-btn rounded-xl text-xs font-bold uppercase flex items-center gap-1 cursor-pointer">
+            Kirim Ulang WA
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- 4. MODAL STATISTIK / TAMU -->
+    <div v-if="statModalType" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-hidden">
+      <div class="glass-box rounded-3xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="p-4 border-b border-white/10 flex justify-between items-center bg-white/5 shrink-0">
+          <span class="text-sm font-bold text-amber-200 uppercase tracking-wider">
+            {{ statModalType === 'tamu' ? 'Daftar Tamu Berdasarkan Klien' : statModalType === 'sent' ? 'Daftar Klien (Telah Dikirim)' : 'Daftar Klien (Belum Dikirim)' }}
+          </span>
+          <button @click="statModalType = null" type="button" class="text-slate-300 hover:text-white cursor-pointer font-bold text-xs">Tutup</button>
+        </div>
+        
+        <div class="p-6 overflow-y-auto flex-1 space-y-4 text-xs">
+          <template v-if="statModalType === 'tamu'">
+            <div v-for="(item, idx) in sentCouples" :key="idx" class="glass-box p-4 rounded-xl space-y-3 border border-white/20">
+              <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+                <div>
+                  <span class="text-[10px] uppercase text-emerald-300 tracking-wider font-semibold block">Telah Dikirim &middot; Resepsi: {{ item.date }}</span>
+                  <span class="font-bold text-white text-sm">{{ item.groom }} & {{ item.bride }}</span>
+                </div>
+                <span class="text-[10px] bg-amber-500/20 text-amber-200 px-2.5 py-1 rounded-full border border-amber-500/30">Tema: {{ item.theme }}</span>
+              </div>
+              <div class="space-y-2 pt-1">
+                <span class="text-[11px] text-slate-300 font-semibold block">Daftar Tamu ({{ item.guests.length }}):</span>
+                <div v-for="(guest, gIdx) in item.guests" :key="gIdx" class="bg-black/30 px-3 py-2 rounded-lg flex items-center justify-between border border-white/10">
+                  <span class="text-white font-medium text-xs">{{ guest.name }} (RSVP: {{ guest.rsvp || 'Belum' }})</span>
+                </div>
+              </div>
+            </div>
+          </template>
+          <template v-else>
+            <div v-for="(item, idx) in currentModalData" :key="idx" class="glass-box p-3.5 rounded-xl flex items-center justify-between">
+              <div>
+                <span class="font-bold text-white text-sm block">{{ item.groom }} & {{ item.bride }}</span>
+                <span class="text-[10px] text-slate-300">Tema: <strong>{{ item.theme }}</strong> &middot; Tanggal: {{ item.date }}</span>
+              </div>
+              <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold border" :class="item.isSent ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border-amber-500/30'">
+                {{ item.isSent ? 'Telah Dikirim' : 'Belum Dikirim' }}
+              </span>
+            </div>
+          </template>
+        </div>
+
+        <div class="p-4 border-t border-white/10 bg-white/5 flex justify-end shrink-0">
+          <button @click="statModalType = null" type="button" class="px-4 py-2 gold-btn rounded-xl text-xs font-bold uppercase cursor-pointer">Tutup</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- 5. MODAL BUAT PESANAN BARU -->
+    <div v-if="showAddOrderModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-hidden">
+      <div class="glass-box rounded-3xl w-full max-w-2xl p-6 max-h-[92vh] overflow-y-auto flex flex-col space-y-4">
+        <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+          Buat Pesanan Pelanggan Baru
+        </h3>
+
+        <div class="space-y-4 text-xs flex-1">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-amber-200 mb-1 font-semibold">Pilih Tema Undangan</label>
+              <select v-model="newOrderForm.theme" class="w-full glass-input rounded-xl p-2.5 bg-slate-900 text-amber-300 font-bold border-amber-500/40 cursor-pointer">
+                <option v-for="t in templates" :key="t.id" :value="t.name">{{ t.name }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-300 mb-1 font-medium">Nomor WhatsApp Pelanggan</label>
+              <input v-model="newOrderForm.whatsapp" type="text" placeholder="Contoh: 081234567890" class="w-full glass-input rounded-xl p-2.5">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-slate-300 mb-1 font-medium">Nama Mempelai Pria (Groom)</label>
+              <input v-model="newOrderForm.groom" type="text" placeholder="Contoh: Rizky Pratama, S.H." class="w-full glass-input rounded-xl p-2.5">
+            </div>
+            <div>
+              <label class="block text-slate-300 mb-1 font-medium">Nama Mempelai Wanita (Bride)</label>
+              <input v-model="newOrderForm.bride" type="text" placeholder="Contoh: Putri Amalia, S.Pd." class="w-full glass-input rounded-xl p-2.5">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-slate-300 mb-1 font-medium">Tanggal Resepsi</label>
+              <input v-model="newOrderForm.date" type="date" class="w-full glass-input rounded-xl p-2.5 bg-slate-900 text-xs">
+            </div>
+            <div>
+              <label class="block text-slate-300 mb-1 font-medium">Nama Tempat / Gedung</label>
+              <input v-model="newOrderForm.locationName" type="text" placeholder="Contoh: Hotel Claro Ballroom" class="w-full glass-input rounded-xl p-2.5">
+            </div>
+            <div>
+              <label class="block text-slate-300 mb-1 font-medium">Link Google Maps</label>
+              <input v-model="newOrderForm.mapsUrl" type="text" placeholder="https://maps.app.goo.gl/..." class="w-full glass-input rounded-xl p-2.5">
+            </div>
+          </div>
+
+          <div class="p-3.5 rounded-2xl glass-box bg-white/5 space-y-3 border border-white/10">
+            <span class="text-amber-200 font-bold block">Data Ampau Digital (Seluruh Bank & E-Wallet Indonesia)</span>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-slate-300 mb-1">Pilih Bank / E-Wallet</label>
+                <select v-model="newOrderForm.bankName" class="w-full glass-input rounded-xl p-2 bg-slate-900 text-xs cursor-pointer">
+                  <option v-for="b in indonesiaBanks" :key="b" :value="b">{{ b }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-slate-300 mb-1">Nomor Rekening / HP</label>
+                <input v-model="newOrderForm.bankAccount" type="text" placeholder="1234567890" class="w-full glass-input rounded-xl p-2">
+              </div>
+              <div>
+                <label class="block text-slate-300 mb-1">Atas Nama (a/n)</label>
+                <input v-model="newOrderForm.bankHolder" type="text" placeholder="Nama Pemilik" class="w-full glass-input rounded-xl p-2">
+              </div>
+            </div>
+          </div>
+
+          <div class="p-3.5 rounded-2xl glass-box bg-white/5 space-y-3 border border-white/10">
+            <span class="text-amber-200 font-bold block">Foto Utama (URL / Link Gambar)</span>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-slate-300 mb-1">Foto Cover Undangan</label>
+                <input v-model="newOrderForm.coverPhoto" type="text" placeholder="https://..." class="w-full glass-input rounded-xl p-2">
+              </div>
+              <div>
+                <label class="block text-slate-300 mb-1">Foto Mempelai Pria</label>
+                <input v-model="newOrderForm.groomPhoto" type="text" placeholder="https://..." class="w-full glass-input rounded-xl p-2">
+              </div>
+              <div>
+                <label class="block text-slate-300 mb-1">Foto Mempelai Wanita</label>
+                <input v-model="newOrderForm.bridePhoto" type="text" placeholder="https://..." class="w-full glass-input rounded-xl p-2">
+              </div>
+            </div>
+          </div>
+
+          <div class="p-3.5 rounded-2xl glass-box bg-white/5 space-y-3 border border-white/10">
+            <span class="text-amber-200 font-bold block">Galeri Foto (Foto 1 sampai 4)</span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-slate-300 mb-1">Foto Galeri 1</label>
+                <input v-model="newOrderForm.gallery[0]" type="text" placeholder="https://..." class="w-full glass-input rounded-xl p-2">
+              </div>
+              <div>
+                <label class="block text-slate-300 mb-1">Foto Galeri 2</label>
+                <input v-model="newOrderForm.gallery[1]" type="text" placeholder="https://..." class="w-full glass-input rounded-xl p-2">
+              </div>
+              <div>
+                <label class="block text-slate-300 mb-1">Foto Galeri 3</label>
+                <input v-model="newOrderForm.gallery[2]" type="text" placeholder="https://..." class="w-full glass-input rounded-xl p-2">
+              </div>
+              <div>
+                <label class="block text-slate-300 mb-1">Foto Galeri 4</label>
+                <input v-model="newOrderForm.gallery[3]" type="text" placeholder="https://..." class="w-full glass-input rounded-xl p-2">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center pt-3 shrink-0 border-t border-white/10">
+          <button @click="reviewNewFormOrder" type="button" class="px-3.5 py-2 glass-input rounded-xl text-xs text-amber-300 font-semibold flex items-center gap-1.5 cursor-pointer">
+            Review Dulu
+          </button>
+
+          <div class="flex space-x-2">
+            <button @click="showAddOrderModal = false" type="button" class="px-3 py-2 glass-input rounded-xl text-xs cursor-pointer">Batal</button>
+            <button @click="saveNewOrder" type="button" class="px-4 py-2 gold-btn rounded-xl text-xs font-bold uppercase cursor-pointer">Simpan sebagai Draft</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- 6. MODAL PRATINJAU TEMA KLIEN -->
+    <div v-if="templatePreviewModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-hidden">
+      <div class="glass-box rounded-3xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh] border border-amber-400/40">
+        <div class="p-3.5 border-b border-white/10 flex justify-between items-center bg-white/10 shrink-0">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+            <span class="text-xs font-bold text-amber-200 uppercase tracking-wider">Pratinjau Tema: {{ templatePreviewModal.name }} (Read-Only)</span>
+          </div>
+          <button @click="templatePreviewModal = null" type="button" class="text-slate-300 hover:text-white cursor-pointer text-xs font-bold">Tutup</button>
+        </div>
+        
+        <div class="p-4 overflow-y-auto flex-1 space-y-4">
+          <div class="rounded-2xl p-6 text-center space-y-5 shadow-2xl border border-white/20 bg-gradient-to-b from-stone-900 via-amber-950 to-stone-900 text-amber-200 relative overflow-hidden">
+            
+            <div class="absolute top-4 right-4 bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-full text-[10px] font-bold">
+              Mode Lihat Saja (Tanpa Edit)
+            </div>
+
+            <div class="relative h-44 rounded-xl overflow-hidden border border-white/20 mb-3 mt-4">
+              <img :src="templatePreviewModal.cover" @click="openImagePopup(templatePreviewModal.cover)" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition" title="Klik untuk memperbesar">
+              <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex items-end justify-center p-3 pointer-events-none">
+                <span class="text-xs text-amber-200 font-cinzel font-bold tracking-widest uppercase">TEMA: {{ templatePreviewModal.name }}</span>
+              </div>
+            </div>
+
+            <div class="flex justify-center items-center gap-4">
+              <div class="text-center">
+                <img :src="defaultGroom" @click="openImagePopup(defaultGroom)" class="w-20 h-20 rounded-full border-2 border-amber-400 object-cover mx-auto shadow-lg cursor-pointer hover:scale-105 transition" title="Klik untuk memperbesar">
+                <h3 class="text-sm font-bold text-white mt-1 font-cinzel">Contoh Pria</h3>
+              </div>
+              <span class="text-2xl font-vibes text-amber-400">&</span>
+              <div class="text-center">
+                <img :src="defaultBride" @click="openImagePopup(defaultBride)" class="w-20 h-20 rounded-full border-2 border-amber-400 object-cover mx-auto shadow-lg cursor-pointer hover:scale-105 transition" title="Klik untuk memperbesar">
+                <h3 class="text-sm font-bold text-white mt-1 font-cinzel">Contoh Wanita</h3>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-300 italic">
+              "{{ templatePreviewModal.description }}"
+            </p>
+
+            <div class="glass-box p-3.5 rounded-xl text-left text-xs space-y-2 bg-white/5 border border-white/10">
+              <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
+                <span class="text-[11px] text-slate-300">Contoh Tanggal:</span>
+                <span class="font-bold text-white">2026-12-12</span>
+              </div>
+              <div class="flex justify-between items-center pt-1">
+                <span class="text-[11px] text-slate-300">Contoh Tempat:</span>
+                <span class="font-bold text-white">Gedung Resepsi Indah</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="p-3.5 border-t border-white/10 bg-white/5 flex justify-end shrink-0">
+          <button @click="templatePreviewModal = null" type="button" class="px-5 py-2 gold-btn rounded-xl text-xs font-bold uppercase cursor-pointer">
+            Tutup & Pilih Tema Ini
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- 7. MODAL KONFIRMASI RESET DATA -->
+    <div v-if="showResetConfirmModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="glass-box rounded-3xl w-full max-w-sm p-6 space-y-4 border border-amber-400/40 anim-fade-down text-center">
+        <div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center justify-center mx-auto text-sm font-bold">
+          !
+        </div>
+        <h3 class="font-cinzel text-sm font-bold text-white uppercase tracking-wider">Konfirmasi Reset Data</h3>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Semua data pesanan klien akan dihapus dan dikembalikan ke 4 data sampel bawaan awal. Yakin ingin melanjutkan?
+        </p>
+        <div class="grid grid-cols-2 gap-2 pt-2">
+          <button @click="showResetConfirmModal = false" type="button" class="glass-input py-2.5 rounded-xl text-xs font-semibold cursor-pointer">
+            Batal
+          </button>
+          <button @click="executeResetData" type="button" class="gold-btn py-2.5 rounded-xl text-xs font-bold uppercase cursor-pointer">
+            Ya, Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          isLoggedIn: false,
+          activeView: 'admin',
+          loginError: '',
+          statModalType: null,
+          showAddOrderModal: false,
+          reviewClientModal: null,
+          templatePreviewModal: null,
+          activeImagePopup: null,
+          showAdminProfileModal: false,
+          showResetConfirmModal: false,
+          selectedClientIndex: 0,
+          newGuestName: '',
+          toastMessage: '',
+
+          adminWhatsAppNumber: '6281234567890',
+          isPublicClientForm: false,
+
+          defaultCover: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800&auto=format&fit=crop',
+          defaultGroom: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400&auto=format&fit=crop',
+          defaultBride: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=400&auto=format&fit=crop',
+
+          indonesiaBanks: [
+            'Bank BCA', 'Bank Mandiri', 'Bank BRI', 'Bank BNI', 'Bank BSI (Syariah)', 
+            'Bank Permata', 'Bank CIMB Niaga', 'Bank Danamon', 'Bank Mega', 'Bank Tabungan Negara (BTN)',
+            'Dana', 'OVO', 'ShopeePay', 'GoPay', 'LinkAja', 'QRIS All Payment'
+          ],
+
+          loginForm: { username: '', password: '' },
+
+          newOrderForm: {
+            groom: '', bride: '', date: '', theme: 'Royal Classic Gold', whatsapp: '', 
+            locationName: '', mapsUrl: '',
+            bankName: 'Bank BCA', bankAccount: '', bankHolder: '',
+            coverPhoto: '', groomPhoto: '', bridePhoto: '',
+            gallery: ['', '', '', '']
+          },
+
+          publicForm: {
+            groom: '', bride: '', date: '', theme: 'Royal Classic Gold', whatsapp: '',
+            locationName: '', mapsUrl: '', bankName: 'Bank BCA', bankAccount: '', bankHolder: ''
+          },
+
+          allCouples: [],
+          templates: []
+        };
+      },
+      computed: {
+        totalGuestsCount() {
+          let count = 0;
+          this.sentCouples.forEach(client => {
+            if (client.guests && Array.isArray(client.guests)) count += client.guests.length;
+          });
+          return count;
+        },
+        sentCouples() { return this.allCouples.filter(c => c.isSent === true); },
+        unsentCouples() { return this.allCouples.filter(c => c.isSent === false); },
+        currentModalData() {
+          if (this.statModalType === 'sent') return this.sentCouples;
+          if (this.statModalType === 'unsent') return this.unsentCouples;
+          return [];
+        },
+        currentClient() {
+          const sent = this.sentCouples;
+          if (sent.length === 0) return null;
+          if (this.selectedClientIndex >= sent.length) return sent[0];
+          return sent[this.selectedClientIndex];
+        }
+      },
+      created() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('form') === 'client') {
+          this.isPublicClientForm = true;
+        }
+        this.loadFromStorage();
+      },
+      methods: {
+        showToast(message) {
+          this.toastMessage = message;
+          setTimeout(() => {
+            if (this.toastMessage === message) this.toastMessage = '';
+          }, 3500);
+        },
+        formatWhatsAppNumber(phone) {
+          if (!phone) return '6281234567890';
+          let cleaned = phone.replace(/[^0-9]/g, '');
+          if (cleaned.startsWith('0')) {
+            cleaned = '62' + cleaned.slice(1);
+          }
+          return cleaned;
+        },
+        loadFromStorage() {
+          const savedCouples = localStorage.getItem('triple_in_couples_v13');
+          const savedTemplates = localStorage.getItem('triple_in_templates_v13');
+
+          if (savedCouples) {
+            this.allCouples = JSON.parse(savedCouples);
+          } else {
+            this.allCouples = [
+              {
+                groom: 'Rizky Pratama, S.H.', bride: 'Putri Amalia, S.Pd.', theme: 'Royal Classic Gold',
+                date: '2026-12-12', isSent: true, whatsapp: '6281234567891',
+                locationName: 'Hotel Claro Ballroom', mapsUrl: 'https://maps.app.goo.gl/example',
+                bankName: 'Bank BCA', bankAccount: '8830123456', bankHolder: 'Rizky Pratama',
+                coverPhoto: this.defaultCover, groomPhoto: this.defaultGroom, bridePhoto: this.defaultBride,
+                gallery: ['https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=400&auto=format&fit=crop', 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=400&auto=format&fit=crop'],
+                guests: [{ name: 'Bapak & Ibu Direktur (VIP)', rsvp: 'Hadir', comment: 'Semoga lancar acaranya!' }]
+              },
+              {
+                groom: 'Ahmad Fauzi, S.T.', bride: 'Siti Nurhaliza, M.Pd.', theme: 'Floral Sakura Pink',
+                date: '2027-01-20', isSent: true, whatsapp: '6289876543210',
+                locationName: 'Gedung Mulia Makassar', mapsUrl: 'https://maps.app.goo.gl/example2',
+                bankName: 'Bank Mandiri', bankAccount: '1520099887766', bankHolder: 'Ahmad Fauzi',
+                coverPhoto: this.defaultCover, groomPhoto: this.defaultGroom, bridePhoto: this.defaultBride,
+                gallery: ['https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=400&auto=format&fit=crop', 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=400&auto=format&fit=crop'],
+                guests: [{ name: 'Keluarga Besar Makassar', rsvp: 'Hadir', comment: 'Selamat Fauzi & Siti!' }]
+              },
+              {
+                groom: 'Dimas Anggara, S.Kom.', bride: 'Nadya Arina, S.Ars.', theme: 'Royal Classic Gold',
+                date: '2027-02-14', isSent: false, whatsapp: '6281122334455',
+                locationName: 'The Westin Hotel Jakarta', mapsUrl: 'https://maps.app.goo.gl/example3',
+                bankName: 'Bank BRI', bankAccount: '034101002345501', bankHolder: 'Dimas Anggara',
+                coverPhoto: this.defaultCover, groomPhoto: this.defaultGroom, bridePhoto: this.defaultBride,
+                gallery: ['', '', '', ''],
+                guests: []
+              },
+              {
+                groom: 'Fajar Ramadhan, M.E.', bride: 'Alya Salsabila, S.Psi.', theme: 'Floral Sakura Pink',
+                date: '2027-03-01', isSent: false, whatsapp: '6285544332211',
+                locationName: 'Balai Sudirman Jakarta', mapsUrl: 'https://maps.app.goo.gl/example4',
+                bankName: 'Bank BNI', bankAccount: '0987654321', bankHolder: 'Fajar Ramadhan',
+                coverPhoto: this.defaultCover, groomPhoto: this.defaultGroom, bridePhoto: this.defaultBride,
+                gallery: ['', '', '', ''],
+                guests: []
+              }
+            ];
+            this.saveToStorage();
+          }
+
+          if (savedTemplates) {
+            this.templates = JSON.parse(savedTemplates);
+          } else {
+            this.templates = [
+              { 
+                id: 1, 
+                name: 'Royal Classic Gold', 
+                description: 'Desain elegan berlapis warna emas klasik mewah dan berkelas.',
+                cover: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800&auto=format&fit=crop'
+              },
+              { 
+                id: 2, 
+                name: 'Floral Sakura Pink', 
+                description: 'Sentuhan nuansa floral pink lembut dengan kesan romantis minimalis.',
+                cover: 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?q=80&w=800&auto=format&fit=crop'
+              }
+            ];
+            this.saveTemplatesToStorage();
+          }
+        },
+        saveToStorage() {
+          localStorage.setItem('triple_in_couples_v13', JSON.stringify(this.allCouples));
+        },
+        saveTemplatesToStorage() {
+          localStorage.setItem('triple_in_templates_v13', JSON.stringify(this.templates));
+        },
+        resetToDefaultData() {
+          this.showResetConfirmModal = true;
+        },
+        executeResetData() {
+          localStorage.removeItem('triple_in_couples_v13');
+          localStorage.removeItem('triple_in_templates_v13');
+          this.loadFromStorage();
+          this.showResetConfirmModal = false;
+          this.showToast('Data berhasil di-reset ke pengaturan awal!');
+        },
+        autoFillAdmin() {
+          this.loginForm.username = 'ikran';
+          this.loginForm.password = '12345';
+          this.loginError = '';
+        },
+        handleLogin() {
+          if (this.loginForm.username === 'ikran' && this.loginForm.password === '12345') {
+            this.isLoggedIn = true;
+            this.activeView = 'admin';
+            this.loginError = '';
+            this.showToast('Login berhasil! Selamat datang Admin.');
+          } else {
+            this.loginError = 'Username atau Password salah! (Gunakan: ikran / 12345)';
+          }
+        },
+        handleLogout() {
+          this.isLoggedIn = false;
+          this.loginForm.username = '';
+          this.loginForm.password = '';
+          this.showToast('Anda telah logout.');
+        },
+        openStatModal(type) { this.statModalType = type; },
+        openClientReview(client) { this.reviewClientModal = client; },
+        openTemplatePreview(tpl) { this.templatePreviewModal = tpl; },
+        openImagePopup(imgUrl) { this.activeImagePopup = imgUrl; },
+        
+        copyClientFormLink() {
+          const baseUrl = window.location.origin + window.location.pathname;
+          const link = `${baseUrl}?form=client`;
+          navigator.clipboard.writeText(link);
+          this.showToast('Link formulir klien berhasil disalin!');
+        },
+        
+        getCountdownLabel(targetDateStr) {
+          if (!targetDateStr) return 'Tanggal belum diatur';
+          const target = new Date(targetDateStr).getTime();
+          const now = new Date().getTime();
+          const diffDays = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+          
+          if (diffDays > 0) return `H-${diffDays} Menuju Hari H`;
+          if (diffDays === 0) return 'Hari H Pernikahan (Hari Ini!)';
+          return 'Acara Telah Selesai';
+        },
+
+        getAbsoluteGuestLink(guestName, client) {
+          const baseUrl = window.location.origin + window.location.pathname;
+          return `${baseUrl}?to=${encodeURIComponent(guestName)}&client=${encodeURIComponent(client.groom.split(' ')[0])}`;
+        },
+
+        reviewNewFormOrder() {
+          if (!this.newOrderForm.groom || !this.newOrderForm.bride) {
+            this.showToast('Masukkan nama mempelai terlebih dahulu!');
+            return;
+          }
+          const cleanGallery = this.newOrderForm.gallery.filter(g => g && g.trim() !== '');
+          this.reviewClientModal = { 
+            ...this.newOrderForm, 
+            date: this.newOrderForm.date || '2026-12-12',
+            locationName: this.newOrderForm.locationName || 'Gedung Utama',
+            mapsUrl: this.newOrderForm.mapsUrl || 'https://maps.app.goo.gl/example',
+            gallery: cleanGallery,
+            isSent: false
+          };
+        },
+
+        saveNewOrder() {
+          if (!this.newOrderForm.groom || !this.newOrderForm.bride || !this.newOrderForm.date) {
+            this.showToast('Mohon lengkapi nama mempelai dan tanggal resepsi!');
+            return;
+          }
+          const cleanGallery = this.newOrderForm.gallery.filter(g => g && g.trim() !== '');
+          this.allCouples.push({
+            groom: this.newOrderForm.groom,
+            bride: this.newOrderForm.bride,
+            date: this.newOrderForm.date,
+            theme: this.newOrderForm.theme,
+            isSent: false,
+            whatsapp: this.formatWhatsAppNumber(this.newOrderForm.whatsapp),
+            locationName: this.newOrderForm.locationName || 'Gedung Utama',
+            mapsUrl: this.newOrderForm.mapsUrl || 'https://maps.app.goo.gl/example',
+            bankName: this.newOrderForm.bankName || 'Bank BCA',
+            bankAccount: this.newOrderForm.bankAccount || '-',
+            bankHolder: this.newOrderForm.bankHolder || '-',
+            coverPhoto: this.newOrderForm.coverPhoto || this.defaultCover,
+            groomPhoto: this.newOrderForm.groomPhoto || this.defaultGroom,
+            bridePhoto: this.newOrderForm.bridePhoto || this.defaultBride,
+            gallery: cleanGallery,
+            guests: []
+          });
+          this.saveToStorage();
+          this.newOrderForm = {
+            groom: '', bride: '', date: '', theme: 'Royal Classic Gold', whatsapp: '', 
+            locationName: '', mapsUrl: '', bankName: 'Bank BCA', bankAccount: '', bankHolder: '',
+            coverPhoto: '', groomPhoto: '', bridePhoto: '', gallery: ['', '', '', '']
+          };
+          this.showAddOrderModal = false;
+          this.showToast('Pesanan baru berhasil disimpan sebagai Draft!');
+        },
+
+        submitPublicFormToAdminWA() {
+          const f = this.publicForm;
+          if (!f.groom || !f.bride || !f.date || !f.whatsapp || !f.locationName) {
+            this.showToast('Mohon lengkapi data yang wajib diisi!');
+            return;
+          }
+
+          const text = `Halo Admin Triple In, saya telah mengisi formulir pemesanan undangan digital:\n\nDATA PEMESANAN KLIEN\n\n• Tema Pilihan: *${f.theme}*\n• Mempelai Pria: ${f.groom}\n• Mempelai Wanita: ${f.bride}\n• No. WhatsApp: ${f.whatsapp}\n• Tanggal Resepsi: ${f.date}\n• Lokasi / Gedung: ${f.locationName}\n• Google Maps: ${f.mapsUrl || '-'}\n• Rekening Ampau: ${f.bankName} - ${f.bankAccount || '-'} (a/n ${f.bankHolder || '-'})\n\nMohon bantuannya untuk diproses. Terima kasih! 🙏`;
+
+          window.open(`https://wa.me/${this.adminWhatsAppNumber}?text=${encodeURIComponent(text)}`, '_blank');
+        },
+
+        markAsSent(client) {
+          client.isSent = true;
+          this.saveToStorage();
+          this.openWADialogForClient(client);
+        },
+
+        addNewGuest() {
+          if (!this.newGuestName.trim()) {
+            this.showToast('Masukkan nama tamu terlebih dahulu!');
+            return;
+          }
+          this.currentClient.guests.push({ 
+            name: this.newGuestName.trim(), 
+            rsvp: 'Belum', 
+            comment: '' 
+          });
+          this.saveToStorage();
+          this.newGuestName = '';
+          this.showToast('Tamu berhasil ditambahkan!');
+        },
+
+        copySpecificLink(guestName, client) {
+          const link = this.getAbsoluteGuestLink(guestName, client);
+          navigator.clipboard.writeText(link);
+          this.showToast('Link absolut tamu berhasil disalin!');
+        },
+
+        sendWAGuestSimple(client, guestName) {
+          const link = this.getAbsoluteGuestLink(guestName, client);
+          let text = `Bismillahirahmanirahim.\nAssalamualaikum warahmatullahi wabarakatuh.\n\n"Dan di antara tanda-tanda kebesaran-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepada-Nya..." (QS. Ar-Rum: 21)\n\nDengan memohon rahmat dan ridho Allah Subhanahu Wa Ta'ala, kami mengundang *${guestName}* untuk hadir di acara pernikahan kami:\n\n*${client.groom} & ${client.bride}*\n\n• Akad Nikah: ${client.date} - Pukul 09.00 WITA\n• Resepsi: ${client.date} - Pukul 11.00 WITA - Selesai\n• Lokasi: ${client.locationName}\n\nKehadiran serta doa restu dari Bapak/Ibu/Saudara/i merupakan kado terindah bagi kami.\n\nWassalamualaikum warahmatullahi wabarakatuh.\n\n*${client.groom} & ${client.bride}*\n\n${link}`;
+
+          window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        },
+
+        openWADialogForClient(client) {
+          const cleanWa = this.formatWhatsAppNumber(client.whatsapp);
+          const text = `Assalamu’alaikum warahmatullahi wabarakatuh, Kak ${client.groom} & ${client.bride}. 😊\n\nUndangan digital Anda dengan tema "${client.theme}" sudah aktif dan siap dibagikan!\n\n📍 Lokasi: ${client.locationName}\n💳 Ampau: ${client.bankName} (${client.bankAccount})\n\n— Triple IN Workspace`;
+          window.open(`https://wa.me/${cleanWa}?text=${encodeURIComponent(text)}`, '_blank');
+          if(this.reviewClientModal) this.reviewClientModal = null;
+        }
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
